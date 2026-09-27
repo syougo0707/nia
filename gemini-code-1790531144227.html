@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>英単語クイズアプリ</title>
+
+  <!-- iPhone用アプリ化設定 -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="単語クイズ">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2232/2232688.png">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-blue-50 text-slate-800 min-h-screen font-sans flex flex-col justify-between">
+
+  <!-- ヘッダー -->
+  <header class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-10 flex items-center justify-between">
+    <div class="flex items-center space-x-2">
+      <button id="back-btn" onclick="openModal()" class="hidden text-white hover:bg-blue-700 p-1.5 rounded-lg text-sm font-bold flex items-center transition">
+        ← 中断
+      </button>
+      <h1 id="header-title" class="text-lg font-bold">英単語クイズ</h1>
+    </div>
+    <div id="progress-text" class="text-xs bg-blue-700 px-2.5 py-1 rounded-full font-medium hidden"></div>
+  </header>
+
+  <!-- メインコンテンツ -->
+  <main class="max-w-md w-full mx-auto p-4 flex-grow flex flex-col justify-center">
+
+    <!-- 1. ホーム画面（セクション選択） -->
+    <div id="home-screen" class="space-y-4">
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-blue-100 text-center">
+        <h2 class="text-xl font-bold text-blue-900">BLEACH 必須英単語クイズ</h2>
+        <p class="text-xs text-slate-500 mt-1">全50問（10問 × 5セクション）</p>
+      </div>
+      <div id="sections-container" class="space-y-3"></div>
+    </div>
+
+    <!-- 2. クイズ画面 -->
+    <div id="quiz-screen" class="hidden flex flex-col space-y-4">
+      
+      <!-- 問題カード -->
+      <div class="bg-white p-6 rounded-2xl shadow-md border border-blue-100 flex flex-col space-y-4">
+        
+        <!-- ヒント（日本語訳） -->
+        <div class="bg-blue-50/70 p-3.5 rounded-xl border border-blue-100">
+          <div class="text-xs text-blue-500 font-bold mb-1">意味 / Hint</div>
+          <div id="meaning-text" class="text-base font-bold text-slate-800"></div>
+          <div id="phrase-meaning-text" class="text-xs text-slate-500 mt-1"></div>
+        </div>
+
+        <!-- フレーズ（穴埋め） -->
+        <div class="py-2">
+          <div class="text-xs text-slate-400 font-bold mb-1">フレーズ</div>
+          <div id="phrase-text" class="text-lg font-semibold text-slate-800 leading-relaxed tracking-wide"></div>
+        </div>
+
+        <!-- 回答表示領域（初期状態は非表示） -->
+        <div id="answer-container" class="hidden space-y-3 border-t border-slate-100 pt-4">
+          <div>
+            <div class="text-xs text-slate-400 font-bold mb-1">正解の英単語</div>
+            <div id="word-text" class="text-2xl font-extrabold text-blue-600"></div>
+          </div>
+
+          <!-- 音声再生ボタン -->
+          <div class="flex space-x-2 pt-1">
+            <button onclick="speakCurrentWord()" class="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2 px-3 rounded-lg text-xs flex items-center justify-center space-x-1 border border-blue-200 active:scale-95 transition">
+              <span>🔊 単語を聴く</span>
+            </button>
+            <button onclick="speakCurrentPhrase()" class="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2 px-3 rounded-lg text-xs flex items-center justify-center space-x-1 border border-blue-200 active:scale-95 transition">
+              <span>🔊 フレーズを聴く</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 操作ボタン -->
+      <div id="action-buttons">
+        <button id="show-answer-btn" onclick="showAnswer()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-md text-base active:scale-95 transition">
+          答えを見る
+        </button>
+
+        <div id="judgment-buttons" class="hidden flex space-x-3">
+          <button onclick="judgeAnswer(false)" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3.5 rounded-xl shadow-md text-base active:scale-95 transition text-center">
+            ✕ 違った
+          </button>
+          <button onclick="judgeAnswer(true)" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3.5 rounded-xl shadow-md text-base active:scale-95 transition text-center">
+            ◯ 合ってた
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 3. 結果画面 -->
+    <div id="result-screen" class="hidden text-center space-y-6">
+      <div class="bg-white p-8 rounded-2xl shadow-md border border-blue-100 space-y-4">
+        <div class="text-5xl">🎉</div>
+        <h2 class="text-2xl font-extrabold text-slate-800">学習完了！</h2>
+        <div id="result-stats" class="text-slate-600 text-sm"></div>
+      </div>
+      <button onclick="showHomeScreen()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-md text-base active:scale-95 transition">
+        ホームに戻る
+      </button>
+    </div>
+
+  </main>
+
+  <!-- 中断確認モーダル -->
+  <div id="modal-overlay" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-xs w-full p-6 text-center space-y-4">
+      <h3 class="text-base font-bold text-slate-800">クイズを中断しますか？</h3>
+      <p class="text-xs text-slate-500">現在の進捗は破棄されます。</p>
+      <div class="flex space-x-2 pt-2">
+        <button onclick="closeModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-xs active:scale-95 transition">
+          キャンセル
+        </button>
+        <button onclick="confirmExit()" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 rounded-xl text-xs active:scale-95 transition">
+          中断して戻る
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 問題データ（50問）
+    const quizData = [
+      { id: 1, word: "hooked", meaning: "ハマっている、夢中である", phrase: "I’m so (____) on this anime.", phraseMeaning: "このアニメにめっちゃハマってるんだ。" },
+      { id: 2, word: "get into", meaning: "~にハマる、~に興味を持つ", phrase: "I’ve really (____) BLEACH lately.", phraseMeaning: "最近BLEACHにすごくハマってる。" },
+      { id: 3, word: "binge-watch", meaning: "一気見する", phrase: "I’m planning to (____) the next 200 episodes.", phraseMeaning: "残りの200話を一気見するつもりだ。" },
+      { id: 4, word: "have a long way to go", meaning: "まだまだ先が長い、終わらない", phrase: "I still (____) with 200 episodes left.", phraseMeaning: "あと200話もあるから、まだまだ先は長いよ。" },
+      { id: 5, word: "worth watching", meaning: "見る価値がある、見ごたえがある", phrase: "It’s long, but it’s totally (____).", phraseMeaning: "長いけど、マジで見ごたえがあるよ。" },
+      { id: 6, word: "overwhelming", meaning: "大変な、圧倒される", phrase: "200 episodes feels a bit (____).", phraseMeaning: "200話って聞くとちょっと大変そうに感じる。" },
+      { id: 7, word: "intense", meaning: "白熱した、激しい", phrase: "The battle scenes in this show are so (____).", phraseMeaning: "この作品の戦闘シーンは本当に激しくてかっこいい。" },
+      { id: 8, word: "badass", meaning: "めちゃくちゃかっこいい、強い", phrase: "Ichigo’s Bankai is so (____).", phraseMeaning: "一護の卍解はめちゃくちゃかっこいい。" },
+      { id: 9, word: "epic", meaning: "最高の、スケールが大きい", phrase: "That fight scene was absolutely (____).", phraseMeaning: "あの戦闘シーンは本当に最高だった。" },
+      { id: 10, word: "overpowered", meaning: "チート級に強い、無敵の", phrase: "Yhwach is completely (____).", phraseMeaning: "ユーハバッハは完全にチート級に強い。" },
+      { id: 11, word: "antagonist", meaning: "敵役、悪役", phrase: "He is one of the strongest (____)s in the series.", phraseMeaning: "彼はシリーズ最強クラスの敵役だ。" },
+      { id: 12, word: "banter", meaning: "軽快な掛け合い、冗談の言い合い", phrase: "I love the (____) between Ichigo and Rukia.", phraseMeaning: "一護とルキアの掛け合いが大好きなんだ。" },
+      { id: 13, word: "chemistry", meaning: "相性、掛け合いのノリ", phrase: "They have amazing (____) on screen.", phraseMeaning: "画面越しに見る2人の相性は抜群だ。" },
+      { id: 14, word: "airheaded", meaning: "天然な、おめでたい", phrase: "Rukia can be a bit (____) sometimes.", phraseMeaning: "ルキアは時々ちょっと天然なところがある。" },
+      { id: 15, word: "goofy", meaning: "お茶目な、天然でマヌケな", phrase: "She has a surprisingly (____) side.", phraseMeaning: "彼女には意外とお茶目な一面がある。" },
+      { id: 16, word: "manly", meaning: "男らしい", phrase: "I like Ichigo because he’s very (____).", phraseMeaning: "一護はすごく男らしいから好きなんだ。" },
+      { id: 17, word: "reliable", meaning: "頼りになる", phrase: "He is a tough and (____) protagonist.", phraseMeaning: "彼はタフで頼りになる主人公だ。" },
+      { id: 18, word: "charming", meaning: "魅力的な", phrase: "Her subtle gap personality is so (____).", phraseMeaning: "彼女のさりげないギャップがとても魅力的だ。" },
+      { id: 19, word: "transformation", meaning: "変身、形態変化", phrase: "(____) is what I can’t wait to see for everyone.", phraseMeaning: "みんなの変身［卍解］を見るのが待ちきれない。" },
+      { id: 20, word: "unveil", meaning: "初披露する、解禁する", phrase: "He is about to (____) his ultimate technique.", phraseMeaning: "彼はいよいよ究極の技を初披露するところだ。" },
+      { id: 21, word: "anticipate", meaning: "楽しみに待つ、予期する", phrase: "I’m (____)ing his first big appearance.", phraseMeaning: "彼がドカンと初登場するのを楽しみに待っている。" },
+      { id: 22, word: "hyped", meaning: "テンションが上がっている、ワクワクしている", phrase: "I’m so (____) for the upcoming battles.", phraseMeaning: "これからの戦いにめちゃくちゃテンションが上がっている。" },
+      { id: 23, word: "formidable", meaning: "手強い、恐ろしい", phrase: "Yhwach seems like a (____) enemy.", phraseMeaning: "ユーハバッハは実に手強い敵に見える。" },
+      { id: 24, word: "cliffhanger", meaning: "ハラハラするお預け展開", phrase: "Every episode ends on a huge (____).", phraseMeaning: "毎話めちゃくちゃ気になるところでお預けになる。" },
+      { id: 25, word: "unfold", meaning: "展開する", phrase: "I want to see how the story will (____).", phraseMeaning: "ストーリーがどう展開していくのか見届けたい。" },
+      { id: 26, word: "visually stunning", meaning: "映像美あふれる、見た目が素晴らしい", phrase: "The animation is (____).", phraseMeaning: "作画・映像美が本当に素晴らしい。" },
+      { id: 27, word: "catch up", meaning: "追いつく", phrase: "I need to (____) on the latest episodes.", phraseMeaning: "最新話まで追いつかなきゃいけない。" },
+      { id: 28, word: "breeze through", meaning: "サクサク見る、スイスイ進める", phrase: "You will (____) the series once it gets good.", phraseMeaning: "面白くなってきたらサクサク全話見終わっちゃうよ。" },
+      { id: 29, word: "standout", meaning: "際立った、目立つ", phrase: "Rukia is a (____) character for me.", phraseMeaning: "私にとってルキアは際立って大好きなキャラだ。" },
+      { id: 30, word: "relatable", meaning: "共感できる", phrase: "His struggle makes him a very (____) hero.", phraseMeaning: "苦悩する姿があるからこそ、すごく共感できるヒーローだ。" },
+      { id: 31, word: "pacing", meaning: "テンポ、展開の速度", phrase: "The (____) of the show keeps me engaged.", phraseMeaning: "作品のテンポが良いから飽きずに引き込まれる。" },
+      { id: 32, word: "quirk", meaning: "独特な癖、お茶目な特徴", phrase: "Her unique (____)s make her very cute.", phraseMeaning: "彼女の独特なお茶目な癖がすごく可愛い。" },
+      { id: 33, word: "badly", meaning: "すごく、切実に", phrase: "I (____) want to see his new power.", phraseMeaning: "彼の新しい力をすごく見たい。" },
+      { id: 34, word: "clash", meaning: "ぶつかり合う、対決する", phrase: "I can’t wait for the two characters to (____).", phraseMeaning: "その2人のキャラが直接ぶつかり合うのが待ちきれない。" },
+      { id: 35, word: "villain", meaning: "悪役、敵", phrase: "He is definitely a terrifying (____).", phraseMeaning: "彼は間違いなく恐ろしい悪役だ。" },
+      { id: 36, word: "turn-off", meaning: "興ざめなこと、ドン引き要素", phrase: "Filler episodes can be a bit of a (____).", phraseMeaning: "アニオリ展開は少し興ざめになることがある。" },
+      { id: 37, word: "flawless", meaning: "完璧な、文句なしの", phrase: "The fight choreography was (____).", phraseMeaning: "戦闘の殺陣つけは文句なしの完璧さだった。" },
+      { id: 38, word: "growth", meaning: "成長", phrase: "I really enjoy watching Ichigo’s (____).", phraseMeaning: "一護の成長を見るのが本当に楽しい。" },
+      { id: 39, word: "badassery", meaning: "圧倒的なかっこよさ", phrase: "That scene was pure (____).", phraseMeaning: "あのシーンはただただ圧倒的にかっこよかった。" },
+      { id: 40, word: "dynamic", meaning: "関係性、相乗効果", phrase: "I really like the (____) between those two.", phraseMeaning: "あの2人の関係性がすごく好きだ。" },
+      { id: 41, word: "blow away", meaning: "圧倒する、ド肝を抜く", phrase: "That fight scene is going to (____) you.", phraseMeaning: "あの戦闘シーンは君のド肝を抜くはずだ。" },
+      { id: 42, word: "loyal", meaning: "忠実な、義理堅い", phrase: "Ichigo is fiercely (____) to his friends.", phraseMeaning: "一護は仲間に対してめちゃくちゃ義理堅い。" },
+      { id: 43, word: "unpredictable", meaning: "予測不能な", phrase: "The plot twists are totally (____).", phraseMeaning: "ストーリー展開のひねりが完全に予測不能だ。" },
+      { id: 44, word: "favorite", meaning: "お気に入り、一押し", phrase: "Rukia is definitely my (____).", phraseMeaning: "ルキアは間違いなく私の一押しだ。" },
+      { id: 45, word: "peak", meaning: "絶頂、最高の状態", phrase: "The anime reached its (____) during that arc.", phraseMeaning: "その篇の最中にアニメは最高潮を迎えた。" },
+      { id: 46, word: "get a kick out of", meaning: "~を面白がる、~にワクワクする", phrase: "I (____) their casual conversations.", phraseMeaning: "彼らの何気ない会話のやり取りを面白がって見ている。" },
+      { id: 47, word: "steal the show", meaning: "見せ場を全部持っていく", phrase: "That character completely (____)s.", phraseMeaning: "あのキャラが見せ場を完全に全部持っていった。" },
+      { id: 48, word: "hold out for", meaning: "~を心待ちにする、~まで耐える", phrase: "I’m (____)ing the final confrontation.", phraseMeaning: "最終決戦のシーンを心待ちにして耐えている。" },
+      { id: 49, word: "out of nowhere", meaning: "突如として、思いがけず", phrase: "Suddenly, a powerful enemy appeared (____).", phraseMeaning: "突然、強力な敵が思いがけず現れた。" },
+      { id: 50, word: "switch languages", meaning: "言語を切り替える", phrase: "Why are you suddenly (____)ing?", phraseMeaning: "なんで急に英語に切り替えて話してるの？" }
+    ];
+
+    // アプリの状態管理
+    let weakList = JSON.parse(localStorage.getItem('weakList') || '[]');
+    let currentQuestions = [];
+    let currentIndex = 0;
+    let completedInSession = 0;
+
+    // 音声再生（SpeechSynthesis）の準備
+    const synth = window.speechSynthesis;
+
+    // 画面要素
+    const homeScreen = document.getElementById('home-screen');
+    const quizScreen = document.getElementById('quiz-screen');
+    const resultScreen = document.getElementById('result-screen');
+    const backBtn = document.getElementById('back-btn');
+    const progressText = document.getElementById('progress-text');
+    const headerTitle = document.getElementById('header-title');
+
+    // 初期化表示
+    document.addEventListener('DOMContentLoaded', () => {
+      renderHomeScreen();
+    });
+
+    // ホーム画面の描画
+    function renderHomeScreen() {
+      const container = document.getElementById('sections-container');
+      container.innerHTML = '';
+
+      const sections = [
+        { name: "Section 1 (問 1〜10)", start: 1, end: 10 },
+        { name: "Section 2 (問 11〜20)", start: 11, end: 20 },
+        { name: "Section 3 (問 21〜30)", start: 21, end: 30 },
+        { name: "Section 4 (問 31〜40)", start: 31, end: 40 },
+        { name: "Section 5 (問 41〜50)", start: 41, end: 50 },
+      ];
+
+      sections.forEach((sec, idx) => {
+        const secQuestions = quizData.filter(q => q.id >= sec.start && q.id <= sec.end);
+        const weakCount = secQuestions.filter(q => weakList.includes(q.id)).length;
+        
+        let statusBadge = '';
+        if (weakCount === 0) {
+          statusBadge = '<span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">マスター済み ✨</span>';
+        } else {
+          statusBadge = `<span class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">残り苦手: ${weakCount}問</span>`;
+        }
+
+        const card = document.createElement('div');
+        card.className = 'bg-white p-4 rounded-xl shadow-sm border border-blue-100 flex flex-col space-y-3';
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-slate-800 text-sm">${sec.name}</h3>
+            ${statusBadge}
+          </div>
+          <div class="flex space-x-2 pt-1">
+            <button onclick="startQuiz(${sec.start}, ${sec.end}, 'all')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-xs active:scale-95 transition">
+              ${weakCount === 0 ? 'もう一度解く' : '解いてみる'}
+            </button>
+            <button onclick="startQuiz(${sec.start}, ${sec.end}, 'weak')" ${weakCount === 0 ? 'disabled' : ''} class="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2 rounded-lg text-xs border border-blue-200 disabled:opacity-40 disabled:pointer-events-none active:scale-95 transition">
+              苦手のみ (${weakCount})
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // クイズ開始
+    function startQuiz(startId, endId, mode) {
+      if (mode === 'all') {
+        currentQuestions = quizData.filter(q => q.id >= startId && q.id <= endId);
+      } else {
+        currentQuestions = quizData.filter(q => q.id >= startId && q.id <= endId && weakList.includes(q.id));
+      }
+
+      if (currentQuestions.length === 0) return;
+
+      currentIndex = 0;
+      completedInSession = 0;
+
+      homeScreen.classList.add('hidden');
+      resultScreen.classList.add('hidden');
+      quizScreen.classList.remove('hidden');
+      backBtn.classList.remove('hidden');
+      progressText.classList.remove('hidden');
+
+      renderQuestion();
+    }
+
+    // 単語のフォーマット（大文字・小文字判定）
+    function formatWord(word, phrase) {
+      const isStartOfSentence = phrase.trim().startsWith('(____)');
+      let formatted = word.toLowerCase();
+      if (isStartOfSentence && formatted.length > 0) {
+        formatted = formatted.charAt(0).toUpperCase() + formatted.slice(1);
+      }
+      return formatted;
+    }
+
+    // 問題の表示
+    function renderQuestion() {
+      const q = currentQuestions[currentIndex];
+
+      // プログレス表示
+      headerTitle.textContent = "クイズ";
+      progressText.textContent = `${currentIndex + 1} / ${currentQuestions.length}`;
+
+      // テキスト埋め込み
+      document.getElementById('meaning-text').textContent = q.meaning;
+      document.getElementById('phrase-meaning-text').textContent = q.phraseMeaning;
+      
+      // 空欄付きフレーズを表示
+      document.getElementById('phrase-text').textContent = q.phrase;
+
+      // 回答欄をリセット
+      document.getElementById('answer-container').classList.add('hidden');
+      document.getElementById('show-answer-btn').classList.remove('hidden');
+      document.getElementById('judgment-buttons').classList.add('hidden');
+    }
+
+    // 答えを見る
+    function showAnswer() {
+      const q = currentQuestions[currentIndex];
+      const formattedWord = formatWord(q.word, q.phrase);
+
+      // 単語と完成フレーズを設定
+      document.getElementById('word-text').textContent = formattedWord;
+      document.getElementById('phrase-text').textContent = q.phrase.replace('(____)', formattedWord);
+
+      // ボタン表示切り替え
+      document.getElementById('show-answer-btn').classList.add('hidden');
+      document.getElementById('answer-container').classList.remove('hidden');
+      document.getElementById('judgment-buttons').classList.remove('hidden');
+    }
+
+    // 自己判定
+    function judgeAnswer(isCorrect) {
+      const q = currentQuestions[currentIndex];
+
+      if (isCorrect) {
+        // 苦手リストから削除
+        weakList = weakList.filter(id => id !== q.id);
+      } else {
+        // 苦手リストに追加（重複なし）
+        if (!weakList.includes(q.id)) {
+          weakList.push(q.id);
+        }
+      }
+
+      localStorage.setItem('weakList', JSON.stringify(weakList));
+      completedInSession++;
+
+      // 次の問題へ
+      currentIndex++;
+      if (currentIndex < currentQuestions.length) {
+        renderQuestion();
+      } else {
+        showResults();
+      }
+    }
+
+    // 音声再生機能 (Web Speech API)
+    function speakText(text) {
+      if (!synth) return;
+      synth.cancel(); // 前の音声をクリア
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      utterance.rate = 1.0;
+      synth.speak(utterance);
+    }
+
+    function speakCurrentWord() {
+      const q = currentQuestions[currentIndex];
+      speakText(q.word);
+    }
+
+    function speakCurrentPhrase() {
+      const q = currentQuestions[currentIndex];
+      const formattedWord = formatWord(q.word, q.phrase);
+      const fullPhrase = q.phrase.replace('(____)', formattedWord);
+      speakText(fullPhrase);
+    }
+
+    // 結果画面表示
+    function showResults() {
+      quizScreen.classList.add('hidden');
+      backBtn.classList.add('hidden');
+      progressText.classList.add('hidden');
+      resultScreen.classList.remove('hidden');
+      headerTitle.textContent = "完了";
+
+      document.getElementById('result-stats').textContent = `${completedInSession} 問の学習を行いました！`;
+    }
+
+    // ホーム画面に戻る（完全表示リセット）
+    function showHomeScreen() {
+      quizScreen.classList.add('hidden');
+      resultScreen.classList.add('hidden');
+      backBtn.classList.add('hidden');
+      progressText.classList.add('hidden');
+      
+      homeScreen.classList.remove('hidden');
+      headerTitle.textContent = "英単語クイズ";
+
+      renderHomeScreen();
+    }
+
+    // モーダル操作
+    function openModal() {
+      document.getElementById('modal-overlay').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('modal-overlay').classList.add('hidden');
+    }
+
+    function confirmExit() {
+      closeModal();
+      showHomeScreen();
+    }
+  </script>
+</body>
+</html>
